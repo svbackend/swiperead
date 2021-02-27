@@ -1,0 +1,91 @@
+version: "3.7"
+services:
+    gateway:
+        restart: always
+        build:
+            context: gateway/docker
+            dockerfile: production/nginx/Dockerfile
+        ports:
+            - "443:443"
+            - "80:80"
+        depends_on:
+            - backend
+            - frontend
+        volumes:
+            - /etc/letsencrypt/live/adspons.com/fullchain.pem:/etc/letsencrypt/live/adspons.com/fullchain.pem
+            - /etc/letsencrypt/live/adspons.com/privkey.pem:/etc/letsencrypt/live/adspons.com/privkey.pem
+            - /etc/letsencrypt/live/adspons.com/cert.pem:/etc/letsencrypt/live/adspons.com/cert.pem
+            - /etc/letsencrypt/live/adspons.com/chain.pem:/etc/letsencrypt/live/adspons.com/chain.pem
+
+    backend:
+        restart: always
+        build:
+            context: backend/docker
+            dockerfile: development/nginx/Dockerfile
+        volumes:
+            - ./backend:/app
+        depends_on:
+            - backend-php-fpm
+
+    backend-php-fpm:
+        restart: always
+        build:
+            context: backend/docker
+            dockerfile: development/php-fpm/Dockerfile
+        volumes:
+            - ./backend:/app
+
+    backend-php-cli:
+        build:
+            context: backend/docker
+            dockerfile: development/php-cli/Dockerfile
+        volumes:
+            - ./backend:/app
+
+    backend-node-cli:
+        build:
+            context: frontend/docker/development/node
+        volumes:
+            - ./backend:/app
+
+    backend-queue:
+        restart: unless-stopped
+        build:
+            context: backend/docker
+            dockerfile: development/php-cli/Dockerfile
+        volumes:
+            - ./backend:/app
+        command: sh -c "bin/console enqueue:consume --setup-broker -vvv"
+        tty: true
+        depends_on:
+            - redis
+            - backend-db
+
+    redis:
+        image: redis:6.0-alpine
+        restart: always
+
+    frontend:
+        build:
+            context: frontend
+            dockerfile: docker/production/nginx/Dockerfile
+        restart: always
+
+    frontend-node-cli:
+        build:
+            context: frontend/docker/development/node
+        volumes:
+            - ./frontend:/app
+
+    backend-db:
+        image: postgres:13-alpine
+        volumes:
+            - backend-db:/var/lib/postgresql/data
+        env_file:
+            - .env.local
+        ports:
+            - "15432:5432"
+        restart: unless-stopped
+
+volumes:
+    backend-db:

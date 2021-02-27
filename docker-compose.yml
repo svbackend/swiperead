@@ -1,0 +1,51 @@
+version: "3.7"
+services:
+    gateway:
+        build:
+            context: gateway/docker
+            dockerfile: development/nginx/Dockerfile
+        ports:
+            - "8080:8080"
+        depends_on:
+            - backend
+
+    backend:
+        build:
+            context: backend/docker
+            dockerfile: development/nginx/Dockerfile
+        volumes:
+            - ./backend:/app
+        depends_on:
+            - backend-php-fpm
+        env_file:
+            - .env.local
+
+    backend-php-fpm:
+        build:
+            context: backend/docker
+            dockerfile: development/php-fpm/Dockerfile
+        volumes:
+            - ./backend:/app
+        env_file:
+            - .env.local
+
+    backend-php-cli:
+        build:
+            context: backend/docker
+            dockerfile: development/php-cli/Dockerfile
+        volumes:
+            - ./backend:/app
+        env_file:
+            - .env.local
+
+    backend-db:
+        image: postgres:13-alpine
+        env_file:
+            - .env.local
+        volumes:
+            - backend-db:/var/lib/postgresql/data
+        ports:
+            - "15432:5432"
+
+volumes:
+    backend-db:
