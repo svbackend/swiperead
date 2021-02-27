@@ -26,6 +26,7 @@ class EpubController extends BaseApiController
             $chapterContent = $parse->getChapterByHref($refItemHref);
             dump($chapterContent);
             $chapterCards = $this->getCardsByContent($chapterContent);
+            dd($chapterCards);
             $cards += $chapterCards;
         }
 
@@ -36,8 +37,27 @@ class EpubController extends BaseApiController
 
     private function getCardsByContent(string $chapterContent): array
     {
-        $dom = HtmlDomParser::str_get_html($chapterContent);
+        $rootId = uniqid('swiperead', false);
 
-        return [];
+        $chapterContentWrapped = "<div id=\"{$rootId}\">{$chapterContent}</div>";
+        $chapterContentWrapped = strtr($chapterContentWrapped, ["\n" => '']);
+        $dom = HtmlDomParser::str_get_html($chapterContentWrapped);
+
+        if (mb_strlen($dom->text()) <= 200) {
+            return [$chapterContent];
+        }
+
+        $child = $dom->getElementById($rootId)->firstChild();
+        if (!$child) {
+            return [];
+        }
+
+        if (mb_strlen($child->text()) <= 200) {
+            return [$child->html()];
+        }
+
+        // dd($child->innerHtml());
+
+        return $this->getCardsByContent($child->innerHtml());
     }
 }
