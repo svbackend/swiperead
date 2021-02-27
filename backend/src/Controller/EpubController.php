@@ -37,6 +37,8 @@ class EpubController extends BaseApiController
 
     private function getCardsByContent(string $chapterContent): array
     {
+        $dbg = mb_substr($chapterContent, 0, 6) === 'Первая';
+
         $rootId = uniqid('swiperead', false);
 
         $chapterContentWrapped = "<div id=\"{$rootId}\">{$chapterContent}</div>";
@@ -47,17 +49,65 @@ class EpubController extends BaseApiController
             return [$chapterContent];
         }
 
-        $child = $dom->getElementById($rootId)->firstChild();
-        if (!$child) {
-            return [];
+        $root = $dom->getElementById($rootId);
+        $children = $root->children();
+        if (!$children->length) {
+            return [$chapterContent];
         }
 
-        if (mb_strlen($child->text()) <= 200) {
-            return [$child->html()];
+        $cards = [];
+
+        foreach ($children as $child) {
+            if (mb_strlen($child->text()) <= 200) {
+                $cards = array_merge($cards, [$child->html()]);
+                dump('ADDED CARD: ', $child->html());
+            } else {
+                [$currentElPrefix, $currentElPostfix] = $this->extractHtmlElementPrefixAndPostfix($child->outerHtml());
+
+                if (trim($child->innerHtml())) {
+                    dump('RECURSIVE CALL: ', $child->innerHtml());
+
+                    $cards = array_merge(
+                        $cards,
+                        $this->addHtmlTagsToCards($this->getCardsByContent($child->innerHtml()), $currentElPrefix, $currentElPostfix)
+                    );
+                } else {
+                    $cards = array_merge($cards, $this->addHtmlTagsToCards([$child->text()], $currentElPrefix, $currentElPostfix));
+                }
+            }
         }
 
-        // dd($child->innerHtml());
+        return $cards;
+    }
 
-        return $this->getCardsByContent($child->innerHtml());
+    public function addHtmlTagsToCards(array $cards, string $prefix, string $postfix): array
+    {
+        $c = [];
+        foreach ($cards as $card) {
+            $c[] = $prefix . $card . $postfix;
+        }
+
+        return $c;
+    }
+
+    /**
+     * @param string $outerHtml example: <div id="123">some text</div>
+     * @return ["<div id="123">", "</div>"]
+     */
+    public function extractHtmlElementPrefixAndPostfix(string $outerHtml): array
+    {
+        $outerHtml = trim($outerHtml);
+        $leftArrowPosition = mb_strpos($outerHtml, '<');
+        $rightArrowPosition = mb_strpos($outerHtml, '>');
+        $el = mb_substr($outerHtml, $leftArrowPosition, $rightArrowPosition + 1);
+
+        $tagNameEndPosition = mb_strpos($el, ' ');
+        if ($tagNameEndPosition === false) {
+            $tagNameEndPosition = mb_strpos($el, '>');
+        }
+
+        $elName = trim(mb_substr($el, 1, $tagNameEndPosition));
+
+        return [$el, "</{$elName}>"];
     }
 }
