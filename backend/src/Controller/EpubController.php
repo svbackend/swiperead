@@ -33,6 +33,11 @@ class EpubController extends BaseApiController
         $len = count($cards);
         for ($i = 0, $k = 1; $i < $len && $k < $len; $k++) {
             $currentCardSize = mb_strlen(strip_tags($cards[$i]));
+
+            if ($i>= 45 && $i < 55) {
+                dump(strip_tags($cards[$i]), $currentCardSize, $i, $k);
+            }
+
             if ($currentCardSize < 140) {
                 $cards[$i] .= $cards[$k];
                 $removeCardsIdx[] = $k;
@@ -43,13 +48,15 @@ class EpubController extends BaseApiController
             } elseif ($i+1 === $k) {
                 $i++;
             } else {
-                $i = ++$k;
+                $i = $k;
             }
         }
 
         foreach ($removeCardsIdx as $idx) {
             unset($cards[$idx]);
         }
+
+        dd($cards);
 
         return $this->ack();
     }
