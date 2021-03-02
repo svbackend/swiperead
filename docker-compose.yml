@@ -38,14 +38,14 @@ services:
         env_file:
             - .env.local
 
-    backend-db:
+    swiperead-db:
         image: postgres:13-alpine
         env_file:
             - .env.local
         volumes:
-            - backend-db:/var/lib/postgresql/data
+            - swiperead-db:/var/lib/postgresql/data
         ports:
             - "15432:5432"
 
 volumes:
-    backend-db:
+    swiperead-db:
