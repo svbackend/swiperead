@@ -5,6 +5,7 @@ namespace App\Controller\User;
 use App\Controller\BaseApiController;
 use App\Repository\ApiTokenRepository;
 use App\Security\ApiTokenAuthenticator;
+use App\Service\Files\UserFilesManager;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -12,7 +13,7 @@ use Symfony\Component\Routing\Annotation\Route;
 class MeController extends BaseApiController
 {
     #[Route('/api/v1/user/me', methods: ['GET'])]
-    public function me(): Response
+    public function me(UserFilesManager $files): Response
     {
         $user = $this->getUser();
         if (!$user) {
@@ -23,7 +24,7 @@ class MeController extends BaseApiController
             'id' => $user->getId()->getValue(),
             'name' => $user->getName(),
             'email' => $user->getEmail()->getEmail(),
-            //'avatar_url' => $files->getUserAvatar($user->getId())->getUrl(),
+            'avatar_url' => $files->getUserAvatar($user->getId())->getUrl(),
         ]);
     }
 

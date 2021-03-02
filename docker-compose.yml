@@ -47,5 +47,29 @@ services:
         ports:
             - "15432:5432"
 
+    frontend:
+        build:
+            context: frontend/docker/development/nginx
+        depends_on:
+            - frontend-node
+        env_file:
+            - .env.local
+
+    frontend-node:
+        build:
+            context: frontend/docker/development/node
+        command: sh -c "until [ -f .ready ] ; do sleep 1 ; done && ng run swiperead:serve --port=8080 --host 0.0.0.0"
+        volumes:
+            - ./frontend:/app
+        tty: true
+        env_file:
+            - .env.local
+
+    frontend-node-cli:
+        build:
+            context: frontend/docker/development/node
+        volumes:
+            - ./frontend:/app
+
 volumes:
     swiperead-db:

@@ -5,9 +5,7 @@ namespace App\Service\Files;
 use App\Dto\Files\FileDto;
 use App\Dto\Files\RemoteFileDto;
 use App\Exception\Files\FileDownloadingException;
-use App\Service\Proxy\ProxyProvider;
 use App\Utils\Env;
-use App\Utils\Retry;
 use Aws\S3\S3Client;
 use GuzzleHttp\Client;
 use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
@@ -22,8 +20,7 @@ abstract class FilesManager
 
     public function __construct(
         protected LoggerInterface $logger,
-        private Client $client,
-        private ProxyProvider $proxyProvider
+        private Client $client
     )
     {
         // todo move to config and overwrite for test env (it will add this service to container cache)
@@ -90,11 +87,7 @@ abstract class FilesManager
     {
         $path = $this->getFilepath($toDirectory, $filename);
 
-        $response = Retry::once(
-            fn() => $this->client->get($url, [
-                'proxy' => $this->proxyProvider->getRandomProxy()
-            ])
-        );
+        $response = $this->client->get($url);
         $content = $response->getBody()->getContents();
 
         if (!$content) {
