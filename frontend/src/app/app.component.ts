@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import {Component} from '@angular/core';
+import {UserState} from "./modules/user/user.state";
 
 @Component({
   selector: 'app-root',
@@ -7,4 +8,10 @@ import { Component } from '@angular/core';
 })
 export class AppComponent {
   title = 'swiperead';
+
+  constructor(
+    private userState: UserState
+  ) {
+    userState.loadCurrentUser();
+  }
 }

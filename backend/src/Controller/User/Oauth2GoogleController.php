@@ -22,7 +22,7 @@ class Oauth2GoogleController extends AbstractController
     private function getGoogleClient(): GoogleClient
     {
         $client = new GoogleClient();
-        $client->setApplicationName("Adspons");
+        $client->setApplicationName("SwipeRead");
         $client->setClientId(Env::get('GOOGLE_CLIENT_ID'));
         $client->setClientSecret(Env::get('GOOGLE_CLIENT_SECRET'));
 
@@ -87,7 +87,7 @@ class Oauth2GoogleController extends AbstractController
         $em->persist($apiToken);
         $em->flush();
 
-        $response = $this->redirect(Env::get('APP_URL') . '/app/find/channel');
+        $response = $this->redirect(Env::get('APP_URL'));
         $response->headers->setCookie(Cookie::create('API_TOKEN', $apiToken->getToken()));
         $response->headers->setCookie(Cookie::create('IS_LOGGED_IN', '1', httpOnly: false));
         return $response;

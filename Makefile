@@ -27,7 +27,6 @@ permissions:
 	cd ${PWD}/backend/migrations && sudo find . -type d -exec chmod a+rwx {} \; && sudo find . -type f -exec chmod a+rw {} \;
 	cd ${PWD}/backend/config && sudo find . -type d -exec chmod a+rwx {} \; && sudo find . -type f -exec chmod a+rw {} \;
 	cd ${PWD}/frontend/src && sudo find . -type d -exec chmod a+rwx {} \; && sudo find . -type f -exec chmod a+rw {} \;
-	cd ${PWD}/websocket/src && sudo find . -type d -exec chmod a+rwx {} \; && sudo find . -type f -exec chmod a+rw {} \;
 
 backend-clear:
 	docker run --rm -v ${PWD}/backend:/app -w /app alpine sh -c 'rm -rf var/*'
