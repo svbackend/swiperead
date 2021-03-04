@@ -1,1 +1,8 @@
-<button (click)="joinUsingGoogle()">Sign In</button>
+<div class="logged-in" *ngIf="userState.currentUser">
+  <button>Upload a epub book</button>
+  <button (click)="userState.logout()">Logout</button>
+</div>
+
+<div class="logged-out" *ngIf="!userState.currentUser">
+  <button (click)="joinUsingGoogle()">Sign In</button>
+</div>

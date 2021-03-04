@@ -5,12 +5,10 @@ import {CurrentUserEntity} from "./current-user.entity";
 
 @Injectable({providedIn: 'root'})
 export class UserState {
-  private state: CurrentUserEntity|null = null;
+  public currentUser: CurrentUserEntity|null = null;
 
   constructor(private userService: UserService) {
   }
-
-  get user() { return this.state; }
 
   loadCurrentUser() {
     if (!getCookie('IS_LOGGED_IN').length) return;
@@ -18,7 +16,7 @@ export class UserState {
     this.userService.getCurrentUser()
       .toPromise()
       .then((res) => {
-        this.state = res
+        this.currentUser = res
       })
       .catch((err) => {
         console.error(err)
@@ -31,7 +29,7 @@ export class UserState {
     this.userService.logout()
       .toPromise()
       .then((res) => {
-        this.state = null
+        this.currentUser = null
       })
       .catch((err) => {
         console.error(err)
