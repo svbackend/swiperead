@@ -18,14 +18,16 @@ class EpubController extends BaseApiController
         EpubProcessor $epubProcessor
     ): Response
     {
-        $book = $request->files->get('book');
+        $user = $this->getUser();
 
-        if (!$this->getUser()) {
+        if (!$user) {
             return $this->err('You need to be authenticated');
         }
 
+        $book = $request->files->get('book');
+
         if ($book instanceof UploadedFile) {
-            $epubProcessor->process($book);
+            $epubProcessor->process($user, $book);
 
             return $this->ack();
         }
@@ -40,8 +42,11 @@ class EpubController extends BaseApiController
         $parse = new EpubParser($filepath);
         $parse->parse();
 
+        //dd($parse->getDcItem('title')); // string
+        //dd($parse->getDcItem('creator')); // array / string
+
         $toc = $parse->getTOC();
-        dump($toc);
+        dd($toc);
 
         $cards = [];
         foreach ($toc as $tocItem) {

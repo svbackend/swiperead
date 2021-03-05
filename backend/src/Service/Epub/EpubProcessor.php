@@ -2,14 +2,20 @@
 
 namespace App\Service\Epub;
 
+use App\Entity\Author;
+use App\Entity\Book;
+use App\Entity\User\User;
+use App\ValueObject\Author\AuthorId;
+use App\ValueObject\Book\BookId;
+use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use voku\helper\HtmlDomParser;
 
 class EpubProcessor
 {
-    public function process(UploadedFile $book): void
+    public function process(User $owner, UploadedFile $epub): void
     {
-        $filepath = $book->getPath();
+        $filepath = $epub->getPath();
         $parse = new EpubParser($filepath);
         $parse->parse();
 
@@ -46,6 +52,28 @@ class EpubProcessor
         foreach ($removeCardsIdx as $idx) {
             unset($cards[$idx]);
         }
+
+        $creator = $parse->getDcItem('creator');
+        $authors = new ArrayCollection();
+        if (is_string($creator)) {
+            $creator = [$creator];
+        }
+
+        $authors->add(array_map(static fn(string $name) => new Author(AuthorId::generate(), $name), $creator));
+
+        $book = new Book(
+            BookId::generate(),
+            $parse->getDcItem('title') ?: 'N/A',
+            $owner,
+            $authors,
+            $chapters
+        );
+
+        //dd($parse->getDcItem('title')); // string
+        //dd($parse->getDcItem('creator')); // array / string
+
+        $toc = $parse->getTOC();
+        dd($toc);
     }
 
     private function getCardsByContent(string $chapterContent): array
