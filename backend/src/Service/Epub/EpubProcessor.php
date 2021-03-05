@@ -1,47 +1,19 @@
 <?php
 
-namespace App\Controller;
+namespace App\Service\Epub;
 
-use App\Service\Epub\EpubParser;
-use App\Service\Epub\EpubProcessor;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
 use voku\helper\HtmlDomParser;
 
-class EpubController extends BaseApiController
+class EpubProcessor
 {
-    #[Route('/api/v1/epub/new')]
-    public function uploadEpubBook(
-        Request $request,
-        EpubProcessor $epubProcessor
-    ): Response
+    public function process(UploadedFile $book): void
     {
-        $book = $request->files->get('book');
-
-        if (!$this->getUser()) {
-            return $this->err('You need to be authenticated');
-        }
-
-        if ($book instanceof UploadedFile) {
-            $epubProcessor->process($book);
-
-            return $this->ack();
-        }
-
-        return $this->err('You need to upload *.epub book');
-    }
-
-    #[Route('/api/v1/epub')]
-    public function playground(Request $request): Response
-    {
-        $filepath = __DIR__ . '/../Service/Epub/mark.epub';
+        $filepath = $book->getPath();
         $parse = new EpubParser($filepath);
         $parse->parse();
 
         $toc = $parse->getTOC();
-        dump($toc);
 
         $cards = [];
         foreach ($toc as $tocItem) {
@@ -56,10 +28,6 @@ class EpubController extends BaseApiController
         $len = count($cards);
         for ($i = 0, $k = 1; $i < $len && $k < $len; $k++) {
             $currentCardSize = mb_strlen(strip_tags($cards[$i]));
-
-            if ($i >= 45 && $i < 55) {
-                dump(strip_tags($cards[$i]), $currentCardSize, $i, $k);
-            }
 
             if ($currentCardSize < 140) {
                 $cards[$i] .= $cards[$k];
@@ -78,16 +46,10 @@ class EpubController extends BaseApiController
         foreach ($removeCardsIdx as $idx) {
             unset($cards[$idx]);
         }
-
-        dd($cards);
-
-        return $this->ack();
     }
 
     private function getCardsByContent(string $chapterContent): array
     {
-        $dbg = mb_substr($chapterContent, 0, 6) === 'Первая';
-
         $rootId = uniqid('swiperead', false);
 
         $chapterContentWrapped = "<div id=\"{$rootId}\">{$chapterContent}</div>";
