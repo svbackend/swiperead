@@ -34,12 +34,12 @@ class Book
     private User $owner;
 
     /**
-     * @ORM\OneToMany(targetEntity=BookAuthor::class, mappedBy="book")
+     * @ORM\OneToMany(targetEntity=BookAuthor::class, mappedBy="book", cascade={"persist", "remove"})
      */
     private Collection $authors;
 
     /**
-     * @ORM\OneToMany(targetEntity=BookChapter::class, mappedBy="book", orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity=BookChapter::class, mappedBy="book", orphanRemoval=true, cascade={"persist", "remove"})
      */
     private Collection $chapters;
 

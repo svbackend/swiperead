@@ -1,6 +1,15 @@
 <div class="logged-in" *ngIf="userState.currentUser">
-  <form ngS></form>
-  <button>Upload a epub book</button>
+  <form [formGroup]="uploadForm" (ngSubmit)="onSubmit()">
+    <label>
+      Upload a epub book
+      <input type="file" formControlName="book" accept="application/epub+zip" (change)="onFileSelect($event)">
+    </label>
+    <p>
+      <button type="submit" [disabled]="!uploadForm.valid">Upload</button>
+    </p>
+  </form>
+
+  <hr>
 
   <button (click)="userState.logout()">Logout</button>
 </div>

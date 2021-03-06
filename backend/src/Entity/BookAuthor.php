@@ -20,7 +20,7 @@ class BookAuthor
     /** @ORM\ManyToOne(targetEntity=Book::class, inversedBy="authors") */
     private Book $book;
 
-    /** @ORM\ManyToOne(targetEntity=Author::class, inversedBy="books") */
+    /** @ORM\ManyToOne(targetEntity=Author::class, inversedBy="books", cascade={"persist"}) */
     private Author $author;
 
     public function __construct(Book $book, Author $author)

@@ -2,9 +2,13 @@
 
 namespace App\Service\Epub;
 
+use App\Dto\CardDto;
+use App\Dto\ChapterDto;
 use App\Entity\Author;
 use App\Entity\Book;
 use App\Entity\User\User;
+use App\Repository\BookRepository;
+use App\Service\Flusher;
 use App\ValueObject\Author\AuthorId;
 use App\ValueObject\Book\BookId;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -13,53 +17,75 @@ use voku\helper\HtmlDomParser;
 
 class EpubProcessor
 {
+    public function __construct(
+        private BookRepository $books,
+        private Flusher $flusher,
+    )
+    {
+    }
+
     public function process(User $owner, UploadedFile $epub): void
     {
-        $filepath = $epub->getPath();
+        $filepath = $epub->getRealPath();
         $parse = new EpubParser($filepath);
         $parse->parse();
 
         $toc = $parse->getTOC();
 
+        $chapterIndex = 0;
         $cards = [];
         foreach ($toc as $tocItem) {
             $refItemHref = basename($tocItem['file_name']);
             $chapterContent = $parse->getChapterByHref($refItemHref);
             $chapterCards = $this->getCardsByContent($chapterContent);
-            //dd($chapterCards);
-            $cards += $chapterCards;
+            $cards[$chapterIndex++] = $chapterCards;
         }
 
-        $removeCardsIdx = [];
-        $len = count($cards);
-        for ($i = 0, $k = 1; $i < $len && $k < $len; $k++) {
-            $currentCardSize = mb_strlen(strip_tags($cards[$i]));
+        $chaptersLen = count($cards);
+        for ($chapterIndex = 0; $chapterIndex < $chaptersLen; $chapterIndex++) {
+            $removeCardsIdx = [];
+            $cardsLen = count($cards[$chapterIndex]);
+            for ($i = 0, $k = 1; $i < $cardsLen && $k < $cardsLen; $k++) {
+                $currentCardSize = mb_strlen(strip_tags($cards[$chapterIndex][$i]));
 
-            if ($currentCardSize < 140) {
-                $cards[$i] .= $cards[$k];
-                $removeCardsIdx[] = $k;
-                if ($currentCardSize > 140) {
-                    $i = ++$k;
-                    continue;
+                if ($currentCardSize < 140) {
+                    $cards[$chapterIndex][$i] .= $cards[$chapterIndex][$k];
+                    $removeCardsIdx[] = $k;
+                    if ($currentCardSize > 140) {
+                        $i = ++$k;
+                        continue;
+                    }
+                } elseif ($i + 1 === $k) {
+                    $i++;
+                } else {
+                    $i = $k;
                 }
-            } elseif ($i + 1 === $k) {
-                $i++;
-            } else {
-                $i = $k;
+            }
+
+            foreach ($removeCardsIdx as $idx) {
+                unset($cards[$chapterIndex][$idx]);
             }
         }
 
-        foreach ($removeCardsIdx as $idx) {
-            unset($cards[$idx]);
+        //$cardOrdering = 1;
+        $chapters = new ArrayCollection();
+
+        foreach ($cards as $idx => $chapterCards) {
+            $chapterName = $toc[$idx]['name'];
+            $cardsDto = [];
+            $cardIdx = 1;
+            foreach ($chapterCards as $content) {
+                $cardsDto[] = new CardDto($content, $cardIdx++);
+            }
+            $chapters->add(new ChapterDto($chapterName, 1+$idx, $cardsDto));
         }
 
         $creator = $parse->getDcItem('creator');
-        $authors = new ArrayCollection();
         if (is_string($creator)) {
             $creator = [$creator];
         }
 
-        $authors->add(array_map(static fn(string $name) => new Author(AuthorId::generate(), $name), $creator));
+        $authors = new ArrayCollection(array_map(static fn(string $name) => new Author(AuthorId::generate(), $name), $creator));
 
         $book = new Book(
             BookId::generate(),
@@ -68,12 +94,8 @@ class EpubProcessor
             $authors,
             $chapters
         );
-
-        //dd($parse->getDcItem('title')); // string
-        //dd($parse->getDcItem('creator')); // array / string
-
-        $toc = $parse->getTOC();
-        dd($toc);
+        $this->books->add($book);
+        $this->flusher->flush();
     }
 
     private function getCardsByContent(string $chapterContent): array
@@ -116,7 +138,7 @@ class EpubProcessor
         return $cards;
     }
 
-    public function addHtmlTagsToCards(array $cards, string $prefix, string $postfix): array
+    private function addHtmlTagsToCards(array $cards, string $prefix, string $postfix): array
     {
         $c = [];
         foreach ($cards as $card) {
@@ -130,7 +152,7 @@ class EpubProcessor
      * @param string $outerHtml example: <div id="123">some text</div>
      * @return ["<div id="123">", "</div>"]
      */
-    public function extractHtmlElementPrefixAndPostfix(string $outerHtml): array
+    private function extractHtmlElementPrefixAndPostfix(string $outerHtml): array
     {
         $outerHtml = trim($outerHtml);
         $leftArrowPosition = mb_strpos($outerHtml, '<');

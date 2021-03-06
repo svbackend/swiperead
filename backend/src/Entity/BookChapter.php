@@ -32,7 +32,7 @@ class BookChapter
     private Book $book;
 
     /**
-     * @ORM\OneToMany(targetEntity=BookChapterCard::class, mappedBy="chapter", orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity=BookChapterCard::class, mappedBy="chapter", orphanRemoval=true, cascade={"persist", "remove"})
      */
     private Collection $cards;
 
