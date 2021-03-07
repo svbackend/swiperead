@@ -9,6 +9,12 @@
     </p>
   </form>
 
+  <div class="books" *ngIf="books.length > 0">
+    <div class="book-row" *ngFor="let book of books">
+      <a href="#!">{{book.title}} by {{book.authors.map(bookAuthorsMap).join(', ')}}</a>
+    </div>
+  </div>
+
   <hr>
 
   <button (click)="userState.logout()">Logout</button>

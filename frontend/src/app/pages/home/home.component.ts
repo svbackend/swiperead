@@ -4,6 +4,9 @@ import {Router} from "@angular/router";
 import {UserState} from "../../modules/user/user.state";
 import {FormControl, FormGroup, Validators} from "@angular/forms";
 import {HttpClient} from "@angular/common/http";
+import {BookPreviewEntity} from "../../modules/book/book-preview.entity";
+import {BooksResponse} from "../../modules/book/books.response";
+import {BookAuthorPreviewEntity} from "../../modules/book/book-author-preview.entity";
 
 @Component({
   selector: 'app-home',
@@ -18,6 +21,8 @@ export class HomeComponent implements OnInit {
     book: new FormControl('', [Validators.required]),
   });
 
+  books: BookPreviewEntity[] = [];
+
   constructor(
     private router: Router,
     public userState: UserState,
@@ -25,6 +30,12 @@ export class HomeComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
+    this.http.get<BooksResponse>('/api/v1/books')
+      .subscribe(
+        (res) => {
+          this.books = res.result
+        }
+      )
   }
 
   joinUsingGoogle() {
@@ -46,5 +57,9 @@ export class HomeComponent implements OnInit {
       const file = event.target.files[0];
       this.formData.append('book', file);
     }
+  }
+
+  bookAuthorsMap(a: BookAuthorPreviewEntity) {
+    return a.name
   }
 }

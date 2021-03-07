@@ -3,6 +3,8 @@
 namespace App\Repository;
 
 use App\Entity\Book;
+use App\Utils\Json;
+use App\ValueObject\User\UserId;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -22,5 +24,33 @@ class BookRepository extends ServiceEntityRepository
     public function add(Book $book): void
     {
         $this->getEntityManager()->persist($book);
+    }
+
+    public function findAllByOwner(UserId $id): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+
+        $sql = "
+        SELECT 
+               book.id as id, 
+               book.title as title, 
+               a.authors as authors 
+        FROM book 
+        LEFT JOIN (
+            SELECT book_id, json_agg(json_build_object('id', author.id, 'name', author.name)) authors FROM book_author ba
+            LEFT JOIN author ON (author.id = ba.author_id)
+            GROUP BY ba.book_id
+        ) a ON a.book_id = book.id
+        WHERE book.owner_id = :owner_id
+        ";
+        $result = $conn->fetchAllAssociative($sql, [
+            'owner_id' => $id->getValue()
+        ]);
+
+        return [
+            'result' => array_map(static fn(array $row) => [
+                    'authors' => Json::decode($row['authors'])
+                ] + $row, $result),
+        ];
     }
 }
