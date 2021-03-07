@@ -3,6 +3,8 @@
 namespace App\Repository;
 
 use App\Entity\BookChapterCard;
+use App\Utils\Json;
+use App\ValueObject\Book\BookId;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -19,32 +21,23 @@ class BookChapterCardRepository extends ServiceEntityRepository
         parent::__construct($registry, BookChapterCard::class);
     }
 
-    // /**
-    //  * @return BookChapterCard[] Returns an array of BookChapterCard objects
-    //  */
-    /*
-    public function findByExampleField($value)
+    public function findALlByBook(BookId $id): array
     {
-        return $this->createQueryBuilder('b')
-            ->andWhere('b.exampleField = :val')
-            ->setParameter('val', $value)
-            ->orderBy('b.id', 'ASC')
-            ->setMaxResults(10)
-            ->getQuery()
-            ->getResult()
-        ;
-    }
-    */
+        $conn = $this->getEntityManager()->getConnection();
 
-    /*
-    public function findOneBySomeField($value): ?BookChapterCard
-    {
-        return $this->createQueryBuilder('b')
-            ->andWhere('b.exampleField = :val')
-            ->setParameter('val', $value)
-            ->getQuery()
-            ->getOneOrNullResult()
-        ;
+        $sql = "
+        SELECT id, content, ordering 
+        FROM book_chapter_card bcc 
+        WHERE bcc.chapter_id = x
+        ";
+        $result = $conn->fetchAllAssociative($sql, [
+            'owner_id' => $id->getValue()
+        ]);
+
+        return [
+            'result' => array_map(static fn(array $row) => [
+                    'authors' => Json::decode($row['authors'])
+                ] + $row, $result),
+        ];
     }
-    */
 }
