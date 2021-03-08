@@ -23,6 +23,19 @@ class BookChapterCardRepository extends ServiceEntityRepository
 
     public function findALlByBook(BookId $id, int $offset, int $limit): array
     {
+        // todo maybe try this:
+        /**
+         *
+        SELECT bcc.id         as card_id,
+        bcc.chapter_id as chapter_id,
+        bcc.content    as content,
+        row_number() OVER(ORDER BY bc.ordering, bcc.ordering) as ordering
+        FROM book_chapter_card bcc
+        RIGHT JOIN book_chapter bc on bcc.chapter_id = bc.id
+        WHERE bc.book_id = :book_id
+        ORDER BY bc.ordering, bcc.ordering
+         */
+
         $conn = $this->getEntityManager()->getConnection();
 
         $bookmarkSql = "
