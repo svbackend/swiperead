@@ -46,7 +46,7 @@ class BookChapterCardRepository extends ServiceEntityRepository
             ORDER BY ordering OFFSET :offset LIMIT :limit
             ";
             $result = $conn->fetchAllAssociative($sql, [
-                'owner_id' => $id->getValue(),
+                'id' => $id->getValue(),
                 'offset' => $offset,
                 'limit' => $limit,
             ]);
@@ -66,9 +66,7 @@ class BookChapterCardRepository extends ServiceEntityRepository
         }
 
         return [
-            'result' => array_map(static fn(array $row) => [
-                    'authors' => Json::decode($row['authors'])
-                ] + $row, $result),
+            'result' => $result,
         ];
     }
 }

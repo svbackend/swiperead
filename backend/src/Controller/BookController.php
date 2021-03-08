@@ -37,8 +37,13 @@ class BookController extends BaseApiController
     ): Response
     {
         $user = $this->getUser();
-        $books = $this->cards->findALlByBook(new BookId($id));
+        // todo add voter to check permission to read the book
 
-        return $this->json($books);
+        $offset = (int)$request->get('offset', 0);
+        $limit = (int)$request->get('limit', 10);
+
+        $cards = $this->cards->findALlByBook(new BookId($id), $offset, $limit);
+
+        return $this->json($cards);
     }
 }
