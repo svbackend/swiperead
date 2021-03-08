@@ -1,3 +1,6 @@
 <div class="cards">
-  <div class="card" *ngFor="let card of cards" [innerHTML]="card.content"></div>
+  <div class="card" *ngFor="let card of cards">
+    <img [src]="'https://picsum.photos/seed/' + card.id + '/650/320'" alt="" class="card-backdrop">
+    <div class="content" [innerHTML]="card.content"></div>
+  </div>
 </div>

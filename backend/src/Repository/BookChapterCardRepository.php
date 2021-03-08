@@ -21,62 +21,68 @@ class BookChapterCardRepository extends ServiceEntityRepository
         parent::__construct($registry, BookChapterCard::class);
     }
 
-    public function findALlByBook(BookId $id, int $offset, int $limit): array
+    public function findALlByBook(BookId $id, ?int $cardId, int $limit): array
     {
-        // todo maybe try this:
-        /**
-         *
-        SELECT bcc.id         as card_id,
-        bcc.chapter_id as chapter_id,
-        bcc.content    as content,
-        row_number() OVER(ORDER BY bc.ordering, bcc.ordering) as ordering
-        FROM book_chapter_card bcc
-        RIGHT JOIN book_chapter bc on bcc.chapter_id = bc.id
-        WHERE bc.book_id = :book_id
-        ORDER BY bc.ordering, bcc.ordering
-         */
-
         $conn = $this->getEntityManager()->getConnection();
+        $bookmarkUsed = false;
 
-        $bookmarkSql = "
-            SELECT 
-                   bcc.id as id,
-                   bcc.ordering as ordering,
-                   bcc.chapter_id as chapter_id
-            FROM bookmark
+        if (!$cardId) {
+            $bookmarkSql = "
+            SELECT bcc.id as id FROM bookmark
             LEFT JOIN book_chapter_card bcc on bookmark.card_id = bcc.id
             WHERE book_id = :id
             ";
-        $bookmark = $conn->fetchOne($bookmarkSql, [
-            'id' => $id->getValue()
-        ]);
-
-        if ($bookmark === false) {
-            $sql = "
-            SELECT id, content, ordering 
-            FROM book_chapter_card bcc 
-            WHERE bcc.chapter_id = (SELECT bc.id FROM book_chapter bc WHERE bc.book_id = :id ORDER BY bc.ordering LIMIT 1)
-            ORDER BY ordering OFFSET :offset LIMIT :limit
-            ";
-            $result = $conn->fetchAllAssociative($sql, [
-                'id' => $id->getValue(),
-                'offset' => $offset,
-                'limit' => $limit,
+            $bookmark = $conn->fetchAssociative($bookmarkSql, [
+                'id' => $id->getValue()
             ]);
-        } else {
-            $sql = "
-            SELECT id, content, ordering 
-            FROM book_chapter_card bcc 
-            WHERE bcc.chapter_id = :chapter_id
-            ORDER BY ordering OFFSET :offset LIMIT :limit
-            ";
-            $result = $conn->fetchAllAssociative($sql, [
-                'owner_id' => $id->getValue(),
-                'chapter_id' => $bookmark['chapter_id'],
-                'offset' => $offset,
-                'limit' => $limit,
-            ]);
+            if ($bookmark && isset($bookmark['id'])) {
+                $bookmarkUsed = true;
+                $cardId = $bookmark['id'];
+            }
         }
+
+        $orderingFrom = 0;
+        if ($cardId) {
+            $orderingSql = "
+            SELECT ordering FROM (
+                SELECT bcc.id as id,
+                row_number() OVER(ORDER BY bc.ordering, bcc.ordering) as ordering
+                FROM book_chapter_card bcc
+                RIGHT JOIN book_chapter bc on bcc.chapter_id = bc.id
+                WHERE bc.book_id = :book_id
+                ORDER BY bc.ordering, bcc.ordering
+            ) cards WHERE id = :id
+            ";
+            $ordering = $conn->fetchOne($orderingSql, [
+                'id' => $cardId,
+                'book_id' => $id->getValue(),
+            ]);
+            if ($ordering) {
+                $orderingFrom = (int)$ordering;
+            }
+        }
+
+        if ($bookmarkUsed) {
+            $orderingFrom -= 3;
+            $orderingFrom = max($orderingFrom, 0);
+        }
+
+            $sql = "
+            SELECT * FROM (
+                SELECT bcc.id  as id,
+                bcc.content    as content,
+                row_number() OVER(ORDER BY bc.ordering, bcc.ordering) as ordering
+                FROM book_chapter_card bcc
+                RIGHT JOIN book_chapter bc on bcc.chapter_id = bc.id
+                WHERE bc.book_id = :book_id
+                ORDER BY bc.ordering, bcc.ordering
+            ) cards WHERE ordering > :ordering_from  LIMIT :limit
+            ";
+            $result = $conn->fetchAllAssociative($sql, [
+                'book_id' => $id->getValue(),
+                'ordering_from' => $orderingFrom,
+                'limit' => $limit,
+            ]);
 
         return [
             'result' => $result,

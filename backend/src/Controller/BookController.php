@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Book;
 use App\Repository\BookChapterCardRepository;
 use App\Repository\BookRepository;
+use App\Utils\CastHelper;
 use App\ValueObject\Book\BookId;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -39,10 +40,10 @@ class BookController extends BaseApiController
         $user = $this->getUser();
         // todo add voter to check permission to read the book
 
-        $offset = (int)$request->get('offset', 0);
-        $limit = (int)$request->get('limit', 10);
+        $cardId = CastHelper::toInt($request->get('card_id'));
+        $limit = (int)$request->get('limit', 5);
 
-        $cards = $this->cards->findALlByBook(new BookId($id), $offset, $limit);
+        $cards = $this->cards->findALlByBook(new BookId($id), $cardId, $limit);
 
         return $this->json($cards);
     }
