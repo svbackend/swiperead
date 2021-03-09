@@ -1,0 +1,4 @@
+<div class="card" *ngIf="card">
+  <img *appInViewport [src]="'https://picsum.photos/seed/' + card.id + '/650/320'" alt="" class="card-backdrop">
+  <div class="content" [innerHTML]="card.content"></div>
+</div>

@@ -8,12 +8,16 @@ import {HTTP_INTERCEPTORS, HttpClientModule} from "@angular/common/http";
 import {HttpConfigInterceptor} from "./interceptor/httpconfig.interceptor";
 import {ReactiveFormsModule} from "@angular/forms";
 import { BookComponent } from './pages/book/book.component';
+import { InViewportDirective } from './in-viewport.directive';
+import { CardComponent } from './card/card.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     HomeComponent,
-    BookComponent
+    BookComponent,
+    InViewportDirective,
+    CardComponent
   ],
   imports: [
     HttpClientModule,
