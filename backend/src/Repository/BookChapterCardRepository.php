@@ -21,7 +21,7 @@ class BookChapterCardRepository extends ServiceEntityRepository
         parent::__construct($registry, BookChapterCard::class);
     }
 
-    public function findALlByBook(BookId $id, ?int $cardId, int $limit): array
+    public function findNextCardsByBook(BookId $id, ?int $cardId, int $limit): array
     {
         $conn = $this->getEntityManager()->getConnection();
         $bookmarkUsed = false;
@@ -83,6 +83,56 @@ class BookChapterCardRepository extends ServiceEntityRepository
                 'ordering_from' => $orderingFrom,
                 'limit' => $limit,
             ]);
+
+        return [
+            'result' => $result,
+        ];
+    }
+
+    public function findPrevCardsByBook(BookId $id, int $cardId, int $limit): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+
+        $orderingTo = 0;
+        $orderingSql = "
+            SELECT ordering FROM (
+                SELECT bcc.id as id,
+                row_number() OVER(ORDER BY bc.ordering, bcc.ordering) as ordering
+                FROM book_chapter_card bcc
+                RIGHT JOIN book_chapter bc on bcc.chapter_id = bc.id
+                WHERE bc.book_id = :book_id
+                ORDER BY bc.ordering, bcc.ordering
+            ) cards WHERE id = :id
+            ";
+        $ordering = $conn->fetchOne($orderingSql, [
+            'id' => $cardId,
+            'book_id' => $id->getValue(),
+        ]);
+        if ($ordering) {
+            $orderingTo = (int)$ordering;
+        }
+
+        // a bit of a mess, but all of these inner queries needed to preserve correct ordering
+        $sql = "
+            SELECT * FROM (SELECT * FROM (
+                           SELECT bcc.id                                                 as id,
+                                  bcc.content                                            as content,
+                                  row_number() OVER (ORDER BY bc.ordering, bcc.ordering) as ordering
+                           FROM book_chapter_card bcc
+                                    RIGHT JOIN book_chapter bc on bcc.chapter_id = bc.id
+                           WHERE bc.book_id = :book_id
+                           ORDER BY bc.ordering, bcc.ordering
+                       ) cards
+                  WHERE ordering < :ordering_to
+                  ORDER BY ordering DESC
+                  LIMIT :limit) tbl
+            ORDER BY ordering
+            ";
+        $result = $conn->fetchAllAssociative($sql, [
+            'book_id' => $id->getValue(),
+            'ordering_to' => $orderingTo,
+            'limit' => $limit,
+        ]);
 
         return [
             'result' => $result,

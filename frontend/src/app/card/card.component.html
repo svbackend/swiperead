@@ -1,4 +1,7 @@
 <div class="card" *ngIf="card">
   <img [src]="'https://picsum.photos/seed/' + card.id + '/650/320'" alt="" class="card-backdrop">
-  <div class="content" [innerHTML]="card.content"></div>
+  <div class="content">
+    <div [innerHTML]="card.content"></div>
+    <div class="ordering">{{card.ordering}}</div>
+  </div>
 </div>

@@ -43,7 +43,11 @@ class BookController extends BaseApiController
         $cardId = CastHelper::toInt($request->get('card_id'));
         $limit = (int)$request->get('limit', 5);
 
-        $cards = $this->cards->findALlByBook(new BookId($id), $cardId, $limit);
+        if ($cardId && $request->query->has('prev')) {
+            $cards = $this->cards->findPrevCardsByBook(new BookId($id), $cardId, $limit);
+        } else {
+            $cards = $this->cards->findNextCardsByBook(new BookId($id), $cardId, $limit);
+        }
 
         return $this->json($cards);
     }

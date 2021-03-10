@@ -1,5 +1,10 @@
+<div class="book-navigation">
+  <a routerLink="/">Home</a>
+  <a routerLink="/">TOC</a>
+  <a (click)="loadPrev()" *ngIf="cards.length && cards[0].ordering > 1">Load previous</a>
+</div>
 <div class="cards">
-  <div *ngFor="let card of cards" class="card">
+  <div *ngFor="let card of cards" class="card" [id]="'card' + card.id">
     <app-card [card]="card" (visible)="cardVisible($event)"></app-card>
   </div>
 </div>
