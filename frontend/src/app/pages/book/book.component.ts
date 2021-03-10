@@ -4,6 +4,7 @@ import {BookCardEntity} from "../../modules/book/book-card.entity";
 import {BookCardsResponse} from "../../modules/book/book-cards.response";
 import {ActivatedRoute, Route} from "@angular/router";
 import {last} from "rxjs/operators";
+import {AckResponse} from "../../ack.response";
 
 @Component({
   selector: 'app-book',
@@ -34,22 +35,15 @@ export class BookComponent implements OnInit {
   }
 
   cardVisible(card: BookCardEntity) {
-    console.log('cardVisible')
     if (this.loading) {
-      console.log('loading.. =(')
       return;
     }
 
-    console.log(this.cards.length)
     let lastCard = this.cards[this.cards.length - 1]
-
-    console.log('last card', lastCard)
 
     if (!lastCard) {
       return;
     }
-
-    console.log(card.ordering, lastCard.ordering)
 
     if (card.ordering > (lastCard.ordering - 3)) {
       this.loading = true;
@@ -59,6 +53,12 @@ export class BookComponent implements OnInit {
           this.loading = false;
         });
     }
-    console.log('visible!', card)
+
+    this.saveProgress(card);
+  }
+
+  saveProgress(card: BookCardEntity) {
+    this.http.post<AckResponse>(`/api/v1/books/${this.bookId}/bookmark`, {card_id: card.id})
+      .subscribe((res) => {});
   }
 }

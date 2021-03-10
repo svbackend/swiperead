@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\Book;
 use App\Utils\Json;
+use App\ValueObject\Book\BookId;
 use App\ValueObject\User\UserId;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -52,5 +53,28 @@ class BookRepository extends ServiceEntityRepository
                     'authors' => Json::decode($row['authors'])
                 ] + $row, $result),
         ];
+    }
+
+    public function upsertBookmark(BookId $bookId, int $cardId): void
+    {
+        $conn = $this->getEntityManager()->getConnection();
+
+        $conn->beginTransaction();
+
+        try {
+            $conn->executeStatement('DELETE FROM bookmark WHERE book_id = :book_id;', [
+                ':book_id' => $bookId->getValue(),
+            ]);
+            $conn->executeStatement('
+            INSERT INTO bookmark (book_id, card_id) VALUES (:book_id, :card_id) ON CONFLICT DO NOTHING;', [
+                ':book_id' => $bookId->getValue(),
+                ':card_id' => $cardId,
+            ]);
+        } catch (\Throwable $e) {
+            $conn->rollBack();
+            throw $e;
+        }
+
+        $conn->commit();
     }
 }

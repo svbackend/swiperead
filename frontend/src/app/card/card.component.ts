@@ -16,9 +16,7 @@ export class CardComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    console.log('test')
-    const commentEl = this.vcRef.element.nativeElement; // template
-    //const elToObserve = commentEl.parentElement;
+    const commentEl = this.vcRef.element.nativeElement;
 
     const observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
@@ -26,12 +24,13 @@ export class CardComponent implements OnInit {
           this.inViewport()
         }
       });
-    }, {threshold: [1]});
+    }, {threshold: [.5]});
     observer.observe(commentEl);
   }
 
   inViewport() {
     if (this.card) {
+      console.log('inViewport')
       this.visible.emit(this.card)
     }
   }

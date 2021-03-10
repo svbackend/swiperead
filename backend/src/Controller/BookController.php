@@ -47,4 +47,26 @@ class BookController extends BaseApiController
 
         return $this->json($cards);
     }
+
+    #[Route('/api/v1/books/{id}/bookmark', methods: ['POST'])]
+    public function createBookmark(
+        string $id,
+        Request $request,
+    ): Response
+    {
+        $cardId = CastHelper::toInt($request->get('card_id'));
+        // todo add voter to check permission
+
+        if (!$cardId) {
+            return $this->err('You need to provide card id');
+        }
+
+        //try {
+            $this->books->upsertBookmark(new BookId($id), $cardId);
+        //} catch (\Throwable $e) {
+            //return $this->err('Internal Error! Please try again later.', 500);
+        //}
+
+        return $this->ack();
+    }
 }
