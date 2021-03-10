@@ -49,6 +49,7 @@ export class BookComponent implements OnInit {
       this.loading = true;
       this.http.get<BookCardsResponse>(`/api/v1/books/${this.bookId}/cards?card_id=${lastCard.id}`)
         .subscribe((res) => {
+          this.cards = this.cards.slice(this.cards.length - 5)
           this.cards.push(...res.result)
           this.loading = false;
         });
