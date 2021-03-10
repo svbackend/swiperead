@@ -30,7 +30,6 @@ export class CardComponent implements OnInit {
 
   inViewport() {
     if (this.card) {
-      console.log('inViewport')
       this.visible.emit(this.card)
     }
   }
